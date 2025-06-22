@@ -2,8 +2,8 @@ const int pwmPin = 10;       // PWM output to motor (white wire)
 const int enablePin = 9;     // Enable pin (yellow wire)
 const int directionPin = 8;  // Direction pin (blue wire)
 
-// 2% of 255 (8-bit) ≈ 5
-const int lowSpeedPWM = 1;   // Very slow speed
+// 10% of 255 (8-bit) ≈ 25
+const int lowSpeedPWM = 25;   // Very high speed
 
 void setup() {
   Serial.begin(9600);
