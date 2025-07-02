@@ -6,8 +6,6 @@
 #include <Wire.h>
 
 // Fusion filter choice (use only one)
-// Adafruit_Madgwick filter;
-// Adafruit_Mahony filter;
 Adafruit_NXPSensorFusion filter;  // NXP Sensor Fusion algorithm
 
 #define FILTER_UPDATE_RATE_HZ 200
@@ -17,6 +15,19 @@ uint32_t timestamp = 0;
 Adafruit_LSM6DSOX sox;
 Adafruit_LIS3MDL lis3mdl;
 Adafruit_Sensor_Calibration_EEPROM cal;  // EEPROM calibration helper
+
+void recalibrateMag() {
+  Serial.println("Recalibrating! Please move the board in all directions for 10 seconds...");
+  unsigned long start = millis();
+  while (millis() - start < 10000) { // 10-second calibration
+    sensors_event_t mag_event;
+    lis3mdl.getEvent(&mag_event);
+    cal.calibrate(mag_event); // gather samples
+    delay(10);
+  }
+  cal.saveCalibration();
+  Serial.println("Calibration complete and saved!");
+}
 
 void setup() {
   Serial.begin(115200);
@@ -45,22 +56,21 @@ void setup() {
   if (!cal.begin()) {
     Serial.println("Failed to initialize calibration helper");
   } else if (!cal.loadCalibration()) {
-    Serial.println("No calibration found. Please move the board in all directions for 10 seconds to calibrate...");
-    unsigned long start = millis();
-    while (millis() - start < 10000) { // 10-second calibration
-      sensors_event_t mag_event;
-      lis3mdl.getEvent(&mag_event);
-      cal.calibrate(mag_event); // gather samples
-      delay(10);
-    }
-    cal.saveCalibration();
-    Serial.println("Calibration complete and saved!");
+    recalibrateMag();
   } else {
     Serial.println("Calibration data loaded from EEPROM.");
   }
 }
 
 void loop() {
+  // Check for recalibration command
+  if (Serial.available()) {
+    char command = Serial.read();
+    if (command == 'c' || command == 'C') {
+      recalibrateMag();
+    }
+  }
+
   if ((millis() - timestamp) < (1000 / FILTER_UPDATE_RATE_HZ)) {
     return;
   }
